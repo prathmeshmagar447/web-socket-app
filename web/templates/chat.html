@@ -16,9 +16,21 @@
                 <h2><i class="fas fa-comments"></i> Web Chat</h2>
                 <div class="user-info">
                     <span class="username">{{ username }}</span>
+                    <button id="notificationBtn" class="btn btn-sm btn-outline">
+                        <i class="fas fa-bell"></i>
+                    </button>
                     <button id="logoutBtn" class="btn btn-sm btn-outline">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
+                </div>
+            </div>
+            
+            <div id="notification-panel" class="notification-panel">
+                <div class="notification-panel-header">
+                    <h4>Notifications</h4>
+                </div>
+                <div id="notification-list" class="notification-list">
+                    <!-- Notifications will be loaded here -->
                 </div>
             </div>
             

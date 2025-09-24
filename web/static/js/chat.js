@@ -5,12 +5,13 @@ class ChatClient {
         this.currentRoom = null;
         this.currentUser = null;
         this.typingTimeout = null;
-        
+
         this.initializeElements();
         this.initializeSocket();
         this.bindEvents();
         this.loadRooms();
         this.loadUserData();
+        this.loadNotificationPreferences();
         this.requestNotificationPermission();
     }
     
@@ -51,6 +52,16 @@ class ChatClient {
         // Forms
         this.createRoomForm = document.getElementById('createRoomForm');
         this.joinRoomForm = document.getElementById('joinRoomForm');
+
+        // Notifications
+        this.notificationBtn = document.getElementById('notificationBtn');
+        this.notificationPanel = document.getElementById('notification-panel');
+        this.notificationList = document.getElementById('notification-list');
+
+        // Notification preferences
+        this.notificationPreferences = null;
+        this.soundEnabled = true;
+        this.audioContext = null;
     }
     
     initializeSocket() {
@@ -146,6 +157,9 @@ class ChatClient {
         
         // Emoji (placeholder)
         this.emojiBtn.addEventListener('click', () => this.handleEmojiPicker());
+
+        // Notifications
+        this.notificationBtn.addEventListener('click', () => this.toggleNotificationPanel());
     }
     
     bindModalEvents() {
@@ -316,11 +330,14 @@ class ChatClient {
         if (data.room_id === this.currentRoom?.id) {
             this.appendMessage(data);
             this.scrollToBottom();
+            // Play sound for new message in current room
+            this.playNotificationSound('message');
         }
-        
+
         // Show notification if not in current room
         if (data.room_id !== this.currentRoom?.id) {
             this.showNotification(`New message in ${data.room_name || 'a room'}`, 'info');
+            this.playNotificationSound('notification');
         }
     }
     
@@ -328,6 +345,7 @@ class ChatClient {
         console.log('New private message:', data);
         // TODO: Handle private messages
         this.showNotification(`Private message from ${data.sender_username}`, 'info');
+        this.playNotificationSound('private_message');
         this.markMessagesAsRead(null, data.sender_id);
     }
     
@@ -555,6 +573,58 @@ class ChatClient {
         this.joinRoom(room);
     }
 
+    toggleNotificationPanel() {
+        if (this.notificationPanel.style.display === 'flex') {
+            this.notificationPanel.style.display = 'none';
+        } else {
+            this.notificationPanel.style.display = 'flex';
+            this.loadNotifications();
+        }
+    }
+
+    async loadNotifications() {
+        try {
+            const response = await fetch('/api/notifications');
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayNotifications(data.notifications);
+            } else {
+                this.showNotification('Failed to load notifications', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            this.showNotification('Failed to load notifications', 'error');
+        }
+    }
+
+    displayNotifications(notifications) {
+        this.notificationList.innerHTML = '';
+
+        if (notifications.length === 0) {
+            this.notificationList.innerHTML = '<div class="empty-state">No notifications</div>';
+            return;
+        }
+
+        notifications.forEach(notification => {
+            const notificationElement = this.createNotificationElement(notification);
+            this.notificationList.appendChild(notificationElement);
+        });
+    }
+
+    createNotificationElement(notification) {
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = 'notification-item';
+
+        notificationDiv.innerHTML = `
+            <div class="title">${this.escapeHtml(notification.title)}</div>
+            <div class="message">${this.escapeHtml(notification.message)}</div>
+            <div class="timestamp">${this.formatTimestamp(notification.created_at)}</div>
+        `;
+
+        return notificationDiv;
+    }
+
     markMessagesAsRead(roomId, senderId = null) {
         const messages = this.messagesContainer.querySelectorAll('.message:not(.own)');
         messages.forEach(messageElement => {
@@ -651,10 +721,67 @@ class ChatClient {
         return container;
     }
     
+    async loadNotificationPreferences() {
+        try {
+            const response = await fetch('/api/notifications/preferences');
+            const data = await response.json();
+
+            if (data.success) {
+                this.notificationPreferences = data.preferences;
+                this.soundEnabled = data.preferences.sound_notifications;
+            }
+        } catch (error) {
+            console.error('Error loading notification preferences:', error);
+        }
+    }
+
+    playNotificationSound(type) {
+        if (!this.soundEnabled) return;
+
+        // Initialize audio context if needed
+        if (!this.audioContext) {
+            try {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (e) {
+                console.warn('Web Audio API not supported');
+                return;
+            }
+        }
+
+        // Create different sounds for different notification types
+        const frequencies = {
+            'message': 800,
+            'notification': 600,
+            'private_message': 1000
+        };
+
+        const frequency = frequencies[type] || 800;
+        const duration = 200;
+
+        try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
+
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration / 1000);
+        } catch (e) {
+            console.warn('Could not play notification sound:', e);
+        }
+    }
+
     getCurrentUserId() {
         return this.currentUser ? parseInt(this.currentUser.id) : null;
     }
-    
+
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;

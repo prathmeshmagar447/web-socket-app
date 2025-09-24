@@ -203,6 +203,25 @@ class EnhancedDatabaseManager:
                     FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             ''')
+
+            # Notification Preferences table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS notification_preferences (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER UNIQUE,
+                    email_notifications BOOLEAN DEFAULT 1,
+                    browser_notifications BOOLEAN DEFAULT 1,
+                    sound_notifications BOOLEAN DEFAULT 1,
+                    desktop_notifications BOOLEAN DEFAULT 1,
+                    message_notifications BOOLEAN DEFAULT 1,
+                    friend_request_notifications BOOLEAN DEFAULT 1,
+                    room_invite_notifications BOOLEAN DEFAULT 1,
+                    typing_indicators BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
+                )
+            ''')
             
             # Enhanced Connection Logs table
             cursor.execute('''
@@ -457,8 +476,17 @@ class EnhancedDatabaseManager:
                 FROM chat_rooms r
                 JOIN room_memberships rm ON r.id = rm.room_id
                 WHERE rm.user_id = ?
-                ORDER BY rm.joined_at DESC
             ''', (user_id,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_user_notifications(self, user_id: int, limit: int = 20) -> List[Dict[str, Any]]:
+        """Get notifications for a user"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ?',
+                (user_id, limit)
+            )
             return [dict(row) for row in cursor.fetchall()]
     
     def update_user_status(self, user_id: int, status: str):

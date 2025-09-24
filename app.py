@@ -70,7 +70,7 @@ def main():
     if mode == 'server':
         print("🚀 Starting Socket Server...")
         try:
-            from server.socket_server import main as server_main
+            from server.enhanced_socket_server import main as server_main
             server_main()
         except ImportError as e:
             print(f"❌ Error importing server module: {e}")

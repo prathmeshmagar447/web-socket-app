@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Web Socket Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="chat-page">
+    <div id="userData" data-user-id="{{ session['user_id'] }}" data-username="{{ session['username'] }}"></div>
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-comments"></i> Web Chat</h2>
+                <div class="user-info">
+                    <span class="username">{{ username }}</span>
+                    <button id="logoutBtn" class="btn btn-sm btn-outline">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Rooms Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-users"></i> Chat Rooms</h3>
+                        <button id="createRoomBtn" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div id="roomsList" class="rooms-list">
+                        <!-- Rooms will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Online Users -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-circle online"></i> Online Users</h3>
+                    </div>
+                    <div id="onlineUsers" class="users-list">
+                        <!-- Online users will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <div class="chat-info">
+                    <h3 id="chatTitle">Select a room to start chatting</h3>
+                    <span id="chatDescription" class="chat-description"></span>
+                </div>
+                <div class="chat-controls">
+                    <button id="roomInfoBtn" class="btn btn-sm btn-outline" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="messagesContainer" class="messages-container">
+                <div class="welcome-message">
+                    <i class="fas fa-comments fa-3x"></i>
+                    <h3>Welcome to Web Socket Chat!</h3>
+                    <p>Select a chat room from the sidebar or create a new one to get started.</p>
+                </div>
+            </div>
+            
+            <div id="typingIndicator" class="typing-indicator" style="display: none;">
+                <span id="typingText"></span>
+            </div>
+            
+            <div id="messageInput" class="message-input" style="display: none;">
+                <div class="input-container">
+                    <button id="emojiBtn" class="btn btn-sm btn-outline">
+                        <i class="fas fa-smile"></i>
+                    </button>
+                    <input type="text" id="messageText" placeholder="Type your message..." maxlength="1000">
+                    <button id="fileBtn" class="btn btn-sm btn-outline">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <button id="sendBtn" class="btn btn-sm btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Room Modal -->
+    <div id="createRoomModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Room</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="createRoomForm" class="modal-form">
+                <div class="form-group">
+                    <label for="roomName">Room Name</label>
+                    <input type="text" id="roomName" required maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="roomDescription">Description (optional)</label>
+                    <textarea id="roomDescription" maxlength="200"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="roomPassword">Password (optional)</label>
+                    <input type="password" id="roomPassword">
+                    <small>Leave empty for public room</small>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isPrivate"> Private room
+                    </label>
+                    <small>Private rooms don't appear in public listings</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Join Room Modal -->
+    <div id="joinRoomModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Join Room</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="joinRoomForm" class="modal-form">
+                <div class="form-group">
+                    <label for="joinRoomPassword">Room Password</label>
+                    <input type="password" id="joinRoomPassword" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Join</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

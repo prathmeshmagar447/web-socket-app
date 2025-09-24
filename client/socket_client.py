@@ -141,6 +141,26 @@ class SocketClient:
         else:
             print(f"❌ Failed to send message: {response.get('message') if response else 'No response'}")
             return False
+
+    def send_private_message(self, recipient_id, content):
+        """Send a private message to a user"""
+        if not self.user_info:
+            print("❌ Please login first")
+            return False
+
+        message = {
+            'action': 'send_private_message',
+            'recipient_id': recipient_id,
+            'content': content
+        }
+
+        response = self.send_message(message)
+        if response and response.get('success'):
+            print("✅ Private message sent successfully")
+            return True
+        else:
+            print(f"❌ Failed to send private message: {response.get('message') if response else 'No response'}")
+            return False
     
     def get_recent_messages(self):
         """Get recent messages from the server"""
@@ -200,6 +220,7 @@ def main():
     print("  register <username> <email> - Register a new user")
     print("  login <username>            - Login with username")
     print("  send <message>              - Send a chat message")
+    print("  pm <recipient_id> <message> - Send a private message")
     print("  messages                    - Get recent messages")
     print("  users                       - Get list of users")
     print("  ping                        - Test server connectivity")
@@ -238,6 +259,16 @@ def main():
                         client.send_chat_message(message)
                     else:
                         print("Usage: send <message>")
+                elif command == 'pm':
+                    if len(parts) >= 3:
+                        try:
+                            recipient_id = int(parts[1])
+                            message = ' '.join(parts[2:])
+                            client.send_private_message(recipient_id, message)
+                        except ValueError:
+                            print("Usage: pm <recipient_id> <message>")
+                    else:
+                        print("Usage: pm <recipient_id> <message>")
                 elif command == 'messages':
                     client.get_recent_messages()
                 elif command == 'users':

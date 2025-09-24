@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Web Socket Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-comments"></i> Web Socket Chat</h1>
+                <p>Connect with friends in real-time</p>
+            </div>
+            
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">
+                        <i class="fas fa-user"></i> Username
+                    </label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="{{ url_for('register') }}">Sign up here</a></p>
+            </div>
+            
+            <div id="message" class="message" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <div class="features-section">
+        <div class="features-grid">
+            <div class="feature">
+                <i class="fas fa-users"></i>
+                <h3>Chat Rooms</h3>
+                <p>Create or join public and private chat rooms</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-lock"></i>
+                <h3>Private Messages</h3>
+                <p>Send encrypted direct messages to friends</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-file-upload"></i>
+                <h3>File Sharing</h3>
+                <p>Share images, documents, and media files</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Secure & Fast</h3>
+                <p>Enterprise-grade security with real-time updates</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = 'Login successful! Redirecting...';
+                    messageDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = data.message;
+                    messageDiv.style.display = 'block';
+                }
+            } catch (error) {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                messageDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

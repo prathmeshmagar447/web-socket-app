@@ -459,6 +459,14 @@ class EnhancedSocketServer:
                 'encrypted': encrypt,
                 'timestamp': datetime.now().isoformat()
             })
+        else:
+            # User is offline, send email notification
+            recipient = enhanced_db.get_user_by_id(recipient_id)
+            if recipient and recipient['email']:
+                from notifications.email_notifier import email_notifier
+                subject = f"New private message from {self.clients.get(self.user_sockets.get(user_id), {}).get('username', 'Unknown')}"
+                body = f"You have a new private message:\n\n{content}"
+                email_notifier.send_email(recipient['email'], subject, body)
         
         # Create notification for recipient
         enhanced_db.create_notification(

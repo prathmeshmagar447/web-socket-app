@@ -255,6 +255,14 @@ class EnhancedDatabaseManager:
             if user and self.verify_password(password, user['password_hash'], user['salt']):
                 return dict(user)
             return None
+
+    def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Get user by their ID"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            user = cursor.fetchone()
+            return dict(user) if user else None
     
     def create_chat_room(self, name: str, description: str, created_by: int, password: str = None, is_private: bool = False) -> Optional[int]:
         """Create a new chat room"""

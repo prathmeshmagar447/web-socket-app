@@ -1,7 +1,12 @@
 import sqlite3
 import os
+import hashlib
+import secrets
+import base64
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+from cryptography.fernet import Fernet
+import json
 
 class DatabaseManager:
     """Manages SQLite database operations for the web socket application"""

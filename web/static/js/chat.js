@@ -11,6 +11,7 @@ class ChatClient {
         this.bindEvents();
         this.loadRooms();
         this.loadUserData();
+        this.requestNotificationPermission();
     }
     
     loadUserData() {
@@ -550,31 +551,49 @@ class ChatClient {
             this.showNotification('Failed to logout', 'error');
         }
     }
-    
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = `
-            <span>${this.escapeHtml(message)}</span>
-            <button class=\"notification-close\">&times;</button>
-        `;
-        
-        // Add to page
-        const container = this.getNotificationContainer();
-        container.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
+
+    requestNotificationPermission() {
+        if ('Notification' in window) {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        this.showNotification('Notifications enabled!', 'success');
+                    }
+                });
             }
-        }, 5000);
-        
-        // Manual close
-        notification.querySelector('.notification-close').addEventListener('click', () => {
-            notification.remove();
-        });
+        }
+    }
+    
+    showNotification(message, type = 'info', options = {}) {
+        const { body = '', icon = '/static/images/logo.png', tag = 'default' } = options;
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification(message, { body, icon, tag });
+            notification.onclick = () => {
+                window.focus();
+            };
+        } else {
+            // Fallback to the old notification system
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <span>${this.escapeHtml(message)}</span>
+                <button class="notification-close">&times;</button>
+            `;
+
+            const container = this.getNotificationContainer();
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+
+            notification.querySelector('.notification-close').addEventListener('click', () => {
+                notification.remove();
+            });
+        }
     }
     
     getNotificationContainer() {

@@ -1,0 +1,15 @@
+# Core Python packages (usually included with Python 3.6+)
+# This project uses only built-in Python modules:
+# - socket (for network communication)
+# - sqlite3 (for database operations)
+# - threading (for concurrent operations)
+# - json (for data serialization)
+# - datetime (for timestamps)
+# - os, sys (for system operations)
+
+# No external dependencies required!
+# This project is designed to work with Python 3.6+ standard library only.
+
+# Optional: For enhanced development experience
+# pytest>=6.0.0  # For testing (uncomment if you want to add tests)
+# black>=21.0.0   # For code formatting (uncomment if you want consistent formatting)

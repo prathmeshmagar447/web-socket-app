@@ -1,0 +1,14 @@
+#!/usr/bin/env run --shebang
+# Runfile for web_socket_app
+
+## client : Run the websocket client
+client:
+	cd client && python3 socket_client.py
+
+## server : Run the main server application
+server:
+	python3 app.py
+
+## install : Install Python dependencies
+install:
+	pip3 install -r requirements.txt

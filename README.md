@@ -1,29 +1,55 @@
-# Web Socket Application with Database
+# Web Socket Application with Web Interface and Enhanced Features
 
-A complete Python socket-based web application with client-server architecture and SQLite database integration.
+A comprehensive Python web socket application featuring a client-server architecture, a web interface, and an enhanced SQLite database integration.
 
 ## 🚀 Features
 
 - **Socket Communication**: TCP socket-based client-server communication
-- **Database Integration**: SQLite database for data persistence
-- **User Management**: Registration, login, and user activity tracking  
-- **Real-time Messaging**: Send and receive messages in real-time
-- **Multi-client Support**: Handle multiple clients concurrently using threading
+- **Web Interface**: Flask-based web interface for chat
+- **Real-time Messaging**: Send and receive messages in real-time via Flask-SocketIO
+- **Enhanced Database Integration**: SQLite database with `enhanced_db_manager.py` for robust data persistence
+- **User Management**: Registration, login, and user activity tracking
+- **Multi-client Support**: Handle multiple clients concurrently using threading and Eventlet for the web server
 - **Connection Logging**: Track user connections and activities
+- **Security**: Basic authentication and encryption key management
+- **File Transfer**: Capabilities for transferring files between clients
+- **Notifications**: Email notification system
 
 ## 📁 Project Structure
 
 ```
 web_socket_app/
 ├── app.py                 # Main launcher script
-├── requirements.txt       # Project dependencies  
-├── README.md             # This file
+├── config.py              # Application configuration
+├── requirements.txt       # Project dependencies
+├── README.md              # This file
+├── client/
+│   └── socket_client.py   # Socket client implementation
 ├── database/
-│   └── db_manager.py     # Database operations and management
+│   ├── db_manager.py      # Basic database operations
+│   └── enhanced_db_manager.py # Enhanced database operations and management
+├── features/
+│   └── file_transfer.py   # File transfer functionality
+├── notifications/
+│   └── email_notifier.py  # Email notification system
+├── security/
+│   └── auth_manager.py    # Authentication management
 ├── server/
-│   └── socket_server.py  # Socket server implementation
-└── client/
-    └── socket_client.py  # Socket client implementation
+│   ├── socket_server.py   # Basic socket server implementation
+│   └── enhanced_socket_server.py # Enhanced socket server implementation
+└── web/
+    ├── app.py             # Flask web application
+    ├── wsgi.py            # Gunicorn/Eventlet WSGI entry point
+    ├── encryption.key     # Web application encryption key
+    ├── static/
+    │   ├── css/
+    │   │   └── style.css  # Stylesheets
+    │   └── js/
+    │       └── chat.js    # Frontend JavaScript for chat
+    └── templates/
+        ├── chat.html      # Chat interface template
+        ├── login.html     # Login page template
+        └── register.html  # Registration page template
 ```
 
 ## 🛠️ Installation
@@ -33,8 +59,10 @@ web_socket_app/
    cd /Users/prathmesh/web_socket_app
    ```
 
-2. **No additional dependencies required!**
-   This project uses only Python's built-in modules (socket, sqlite3, threading, json, etc.)
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 3. **Verify Python version**:
    ```bash
@@ -43,69 +71,55 @@ web_socket_app/
 
 ## 🚦 Quick Start
 
-### 1. Start the Server
+### 1. Start the Web Server (Gunicorn with Eventlet)
 
 Open a terminal and run:
 ```bash
 cd /Users/prathmesh/web_socket_app
-python app.py server
+gunicorn --worker-class eventlet -w 1 wsgi:app -b 0.0.0.0:5000
+```
+Or, if you prefer to run with Flask's development server (not recommended for production):
+```bash
+cd /Users/prathmesh/web_socket_app
+python web/app.py
 ```
 
-You should see:
+You should see output indicating the Flask application is running, e.g.:
 ```
-🚀 Socket server started on localhost:12345
-Waiting for client connections...
+* Serving Flask app 'web.app'
+* Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+* Running on http://127.0.0.1:5000
+Press CTRL+C to quit
 ```
 
-### 2. Start a Client
+### 2. Access the Web Interface
+
+Open your web browser and navigate to `http://127.0.0.1:5000`.
+
+### 3. Start a Socket Client (Optional, for direct socket communication)
 
 Open another terminal and run:
 ```bash
-cd /Users/prathmesh/web_socket_app  
+cd /Users/prathmesh/web_socket_app
 python app.py client
 ```
 
-### 3. Use the Client
+### 4. Use the Web Interface
 
-Once connected, you can use these commands:
-
-```bash
-# Register a new user
-register john john@example.com
-
-# Login 
-login john
-
-# Send a message
-send Hello, everyone!
-
-# Get recent messages
-messages
-
-# See all users
-users
-
-# Test connection
-ping
-
-# Exit
-quit
-```
+- **Register**: Create a new user account.
+- **Login**: Log in with your registered credentials.
+- **Chat**: Send and receive messages in real-time.
 
 ## 🎯 Usage Examples
 
-### Server Terminal:
-```bash
-$ python app.py server
-🚀 Socket server started on localhost:12345
-Waiting for client connections...
-📱 New client connected from ('127.0.0.1', 54321)
-✅ User john logged in from ('127.0.0.1', 54321)
-📱 New client connected from ('127.0.0.1', 54322)
-✅ User alice logged in from ('127.0.0.1', 54322)
-```
+### Web Interface:
+- Navigate to `http://127.0.0.1:5000`
+- Register a new user (e.g., `john`, `john@example.com`)
+- Log in with `john`
+- Send messages in the chat interface
 
-### Client Terminal:
+### Socket Client Terminal (if used):
 ```bash
 $ python app.py client
 ✅ Connected to server at localhost:12345
@@ -120,18 +134,10 @@ Commands:
   ping                        - Test server connectivity
   quit                        - Exit the client
 --------------------------------------------------
->>> register john john@example.com
-✅ Registration successful! User ID: 1
->>> login john  
+>>> login john
 ✅ Login successful! Welcome, john
->>> send Hello, world!
+>>> send Hello from socket client!
 ✅ Message sent successfully
->>> messages
-
-📋 Recent Messages (1 messages):
---------------------------------------------------
-[2024-09-24 04:16:00] john: Hello, world!
---------------------------------------------------
 ```
 
 ## 📊 Database Schema
@@ -142,6 +148,7 @@ The application automatically creates a SQLite database with these tables:
 - `id`: Primary key
 - `username`: Unique username
 - `email`: Unique email address
+- `password_hash`: Hashed password (new)
 - `created_at`: Registration timestamp
 - `last_active`: Last activity timestamp
 
@@ -160,58 +167,48 @@ The application automatically creates a SQLite database with these tables:
 
 ## 🔧 Configuration
 
-You can modify the server configuration in `server/socket_server.py`:
-
-```python
-class SocketServer:
-    def __init__(self, host='localhost', port=12345):
-        # Change host and port as needed
-```
-
-And in the client in `client/socket_client.py`:
-
-```python
-class SocketClient:
-    def __init__(self, host='localhost', port=12345):
-        # Must match server configuration
-```
+You can modify the application configuration in `config.py`.
+Key configurations include:
+- `SECRET_KEY`: Flask secret key for session management
+- `DATABASE_URI`: Path to the SQLite database
+- `SERVER_HOST`, `SERVER_PORT`: Socket server host and port
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`: Email notification settings
 
 ## 🚨 Troubleshooting
 
 ### Common Issues:
 
 1. **"Address already in use" error**:
-   - Wait a few seconds and try again
-   - Or change the port number in both server and client
+   - Ensure no other process is using port 5000 (for web) or 12345 (for socket server).
+   - Change the port number in `config.py` and restart.
 
 2. **"Connection refused" error**:
-   - Make sure the server is running first
-   - Check that host/port match between server and client
+   - Make sure the server (web or socket) is running first.
+   - Check that host/port match between client and server configurations.
 
 3. **Import errors**:
-   - Make sure you're running from the `web_socket_app` directory
-   - Use `python app.py` instead of running individual modules
+   - Make sure all dependencies are installed (`pip install -r requirements.txt`).
+   - Ensure you're running from the `web_socket_app` directory.
 
 4. **Database errors**:
-   - The SQLite database file is created automatically
-   - Check file permissions in the project directory
+   - The SQLite database file is created automatically.
+   - Check file permissions in the project directory.
 
 ## 🔒 Security Notes
 
-- This is a development/demonstration application
-- No password encryption is implemented
-- No input sanitization for production use
-- Use only in trusted networks
+- This application includes basic authentication and encryption key management.
+- Password hashing is implemented for user passwords.
+- Input sanitization is still recommended for production use.
+- Ensure `SECRET_KEY` and `encryption.key` are kept secure.
 
 ## 🎈 Extending the Application
 
 Ideas for enhancement:
-- Add password authentication
-- Implement private messaging
-- Add file transfer capabilities  
-- Create a web interface
-- Add message encryption
-- Implement chat rooms/channels
+- Implement private messaging.
+- Enhance file transfer with progress indicators and larger file support.
+- Add chat rooms/channels.
+- Integrate more robust security features (e.g., OAuth, rate limiting).
+- Improve UI/UX of the web interface.
 
 ## 📝 License
 

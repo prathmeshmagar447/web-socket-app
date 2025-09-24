@@ -107,6 +107,10 @@ class ChatClient {
         this.socket.on('user_typing', (data) => {
             this.handleTypingIndicator(data);
         });
+
+        this.socket.on('message_status_update', (data) => {
+            this.handleMessageStatusUpdate(data);
+        });
     }
     
     bindEvents() {
@@ -245,6 +249,7 @@ class ChatClient {
         
         // Load room messages
         this.loadRoomMessages(room.id);
+        this.markMessagesAsRead(room.id);
     }
     
     updateChatHeader(room) {
@@ -323,6 +328,7 @@ class ChatClient {
         console.log('New private message:', data);
         // TODO: Handle private messages
         this.showNotification(`Private message from ${data.sender_username}`, 'info');
+        this.markMessagesAsRead(null, data.sender_id);
     }
     
     appendMessage(message) {
@@ -333,6 +339,7 @@ class ChatClient {
     createMessageElement(message) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message';
+        messageDiv.dataset.messageId = message.id;
         
         // Check if message is from current user
         if (message.sender_id === this.getCurrentUserId()) {
@@ -425,6 +432,29 @@ class ChatClient {
     handleUserLeft(data) {
         if (data.room_id === this.currentRoom?.id) {
             this.showSystemMessage(`${data.username} left the room`);
+        }
+    }
+
+    handleMessageStatusUpdate(data) {
+        const { message_id, status } = data;
+        const messageElement = document.querySelector(`[data-message-id="${message_id}"]`);
+        if (messageElement) {
+            let statusIndicator = messageElement.querySelector('.message-status');
+            if (!statusIndicator) {
+                statusIndicator = document.createElement('span');
+                statusIndicator.className = 'message-status';
+                messageElement.querySelector('.message-header').appendChild(statusIndicator);
+            }
+
+            let icon = '';
+            if (status === 'delivered') {
+                icon = '<i class="fas fa-check-double"></i>';
+            } else if (status === 'read') {
+                icon = '<i class="fas fa-check-double" style="color: #3498db;"></i>';
+            } else {
+                icon = '<i class="fas fa-check"></i>';
+            }
+            statusIndicator.innerHTML = icon;
         }
     }
     
@@ -523,6 +553,20 @@ class ChatClient {
         };
         
         this.joinRoom(room);
+    }
+
+    markMessagesAsRead(roomId, senderId = null) {
+        const messages = this.messagesContainer.querySelectorAll('.message:not(.own)');
+        messages.forEach(messageElement => {
+            const messageId = messageElement.dataset.messageId;
+            const statusIndicator = messageElement.querySelector('.message-status');
+            if (messageId && (!statusIndicator || !statusIndicator.innerHTML.includes('fa-check-double'))) {
+                this.socket.emit('message_status_update', {
+                    message_id: messageId,
+                    status: 'read'
+                });
+            }
+        });
     }
     
     handleFileUpload() {

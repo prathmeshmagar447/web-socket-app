@@ -228,6 +228,7 @@ class EnhancedSocketServer:
             'get_messages': self.handle_get_messages,
             'get_private_messages': self.handle_get_private_messages,
             'add_reaction': self.handle_add_reaction,
+            'message_status_update': self.handle_message_status_update,
             'start_typing': self.handle_start_typing,
             'stop_typing': self.handle_stop_typing,
             'upload_file': self.handle_upload_file,
@@ -459,6 +460,16 @@ class EnhancedSocketServer:
                 'encrypted': encrypt,
                 'timestamp': datetime.now().isoformat()
             })
+
+            # Notify sender that the message was delivered
+            if user_id in self.user_sockets:
+                sender_socket = self.user_sockets[user_id]
+                self.send_response(sender_socket, {
+                    'type': 'message_status_update',
+                    'message_id': message_id,
+                    'status': 'delivered'
+                })
+            enhanced_db.update_message_status(message_id, 'delivered')
         else:
             # User is offline, send email notification
             recipient = enhanced_db.get_user_by_id(recipient_id)
@@ -505,6 +516,31 @@ class EnhancedSocketServer:
         
         messages = enhanced_db.get_private_messages(user_id, other_user_id, limit)
         return {'success': True, 'messages': messages}
+
+    def handle_message_status_update(self, message, client_address, user_id):
+        """Handle message status updates (e.g., 'read')"""
+        message_id = message.get('message_id')
+        status = message.get('status')
+
+        if not all([message_id, status]):
+            return {'success': False, 'message': 'Message ID and status are required'}
+
+        # Update the message status in the database
+        enhanced_db.update_message_status(message_id, status)
+
+        # Notify the original sender of the status update
+        original_message = enhanced_db.get_message_by_id(message_id)
+        if original_message:
+            sender_id = original_message['sender_id']
+            if sender_id in self.user_sockets:
+                sender_socket = self.user_sockets[sender_id]
+                self.send_response(sender_socket, {
+                    'type': 'message_status_update',
+                    'message_id': message_id,
+                    'status': status
+                })
+
+        return {'success': True}
     
     def broadcast_to_room(self, room_id, message, exclude_user=None):
         """Broadcast message to all users in a room"""

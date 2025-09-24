@@ -116,6 +116,7 @@ class EnhancedDatabaseManager:
                     edited BOOLEAN DEFAULT 0,
                     edited_at TIMESTAMP,
                     reply_to_id INTEGER,
+                    status TEXT DEFAULT 'sent',
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (sender_id) REFERENCES users (id),
                     FOREIGN KEY (room_id) REFERENCES chat_rooms (id),
@@ -478,6 +479,25 @@ class EnhancedDatabaseManager:
                 "SELECT id, username, status, avatar_path FROM users WHERE status = 'online'"
             )
             return [dict(row) for row in cursor.fetchall()]
+
+    def update_message_status(self, message_id: int, status: str) -> bool:
+        """Update the status of a message"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'UPDATE messages SET status = ? WHERE id = ?',
+                (status, message_id)
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_message_by_id(self, message_id: int) -> Optional[Dict[str, Any]]:
+        """Get a message by its ID"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM messages WHERE id = ?', (message_id,))
+            message = cursor.fetchone()
+            return dict(message) if message else None
 
 # Initialize enhanced database instance
 enhanced_db = EnhancedDatabaseManager()

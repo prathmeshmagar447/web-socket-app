@@ -152,7 +152,7 @@
 - 🔲 Custom notification sounds
 - 🔲 Notification preferences/settings
 - 🔲 Message status tracking (sent/delivered/read)
-- 🔲 Typing indicators
+- 🔲 Typing indicators ✅
 - 🔲 Notification history
 
 **Estimated Time:** 3-4 hours

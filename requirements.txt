@@ -10,6 +10,8 @@ bcrypt>=4.0.0              # Alternative password hashing (backup)
 Flask>=2.3.0               # Web interface framework
 Flask-SocketIO>=5.3.0      # WebSocket support for Flask
 Flask-CORS>=4.0.0          # Cross-origin resource sharing
+gunicorn>=21.2.0           # WSGI HTTP Server for UNIX
+eventlet>=0.33.0           # Concurrency library for Gunicorn with SocketIO
 
 # File Handling and Media
 Pillow>=10.0.0             # Image processing and thumbnails

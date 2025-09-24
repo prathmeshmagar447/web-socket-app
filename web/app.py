@@ -11,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from database.enhanced_db_manager import enhanced_db
 from security.auth_manager import auth_manager
 from features.file_transfer import file_transfer_manager
+from notifications.email_notifier import email_notifier
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -200,6 +201,15 @@ def api_create_room():
     else:
         return jsonify({'success': False, 'message': 'Failed to create room'})
 
+@app.route('/api/notifications')
+def api_get_notifications():
+    """Get user's notifications"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Authentication required'})
+
+    notifications = enhanced_db.get_user_notifications(session['user_id'])
+    return jsonify({'success': True, 'notifications': notifications})
+
 # Socket.IO Event Handlers
 @socketio.on('connect')
 def handle_connect():
@@ -361,19 +371,19 @@ def handle_send_private_message(data):
     """Handle sending a private message"""
     if request.sid not in socket_users:
         return
-    
+
     user_info = socket_users[request.sid]
     user_id = user_info['user_id']
     username = user_info['username']
-    
+
     recipient_id = data.get('recipient_id')
     content = data.get('content')
     encrypt = data.get('encrypt', False)
-    
+
     if not all([recipient_id, content]):
         emit('private_message_error', {'message': 'Recipient ID and content are required'})
         return
-    
+
     # Save message to database
     message_id = enhanced_db.add_message(
         sender_id=user_id,
@@ -381,7 +391,7 @@ def handle_send_private_message(data):
         recipient_id=recipient_id,
         encrypt=encrypt
     )
-    
+
     # Send to recipient if online
     if recipient_id in active_users:
         recipient_sid = active_users[recipient_id]
@@ -393,7 +403,25 @@ def handle_send_private_message(data):
             'encrypted': encrypt,
             'timestamp': datetime.now().isoformat()
         }, room=recipient_sid)
-    
+    else:
+        # Recipient is offline, send email notification if enabled
+        recipient = enhanced_db.get_user_by_id(recipient_id)
+        if recipient:
+            prefs = enhanced_db.get_notification_preferences(recipient_id)
+            if prefs.get('email_notifications', True) and prefs.get('message_notifications', True):
+                subject = f"New message from {username}"
+                body = f"You have received a new private message from {username}:\n\n{content[:200]}{'...' if len(content) > 200 else ''}\n\nLogin to view the full message."
+                email_notifier.send_email(recipient['email'], subject, body)
+
+                # Create in-app notification
+                enhanced_db.create_notification(
+                    user_id=recipient_id,
+                    notification_type='private_message',
+                    title=f'Message from {username}',
+                    message=f'You have a new private message',
+                    data={'sender_id': user_id, 'message_id': message_id}
+                )
+
     # Confirm to sender
     emit('private_message_sent', {
         'message_id': message_id,
@@ -432,6 +460,3 @@ def handle_typing_stop(data):
         'room_id': room_id,
         'typing': False
     }, room=room_id, include_self=False)
-
-if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
